@@ -41,7 +41,7 @@ Example
     function disconnect() {
         vpnc.disconnect(function (err, code) {
             if (err) {
-                console.log('Error isconnecting VPN:');
+                console.log('Error disconnecting VPN:');
                 console.log(err);
             } else {
                 console.log('VPN disconnected.');
