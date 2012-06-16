@@ -1,4 +1,5 @@
-var vpnc = require('/usr/local/lib/node_modules/vpnc');
+var vpnc = require('vpnc');
+
 var config = {
     IPSec_ID: 'foobar',
     IPSec_gateway: 'vpn.example.com',
