@@ -26,6 +26,16 @@ Example
         Cisco_UDP_Encapsulation_Port: 0,
     };
     
+    vpnc.available(function (err, version) {
+        if (err) {
+            console.log('VPN unavailable:');
+            console.log(err);
+        } else {
+            console.log('Found ' + version);
+            connect();
+        }
+    });
+    
     function connect() {
         vpnc.connect(config, function (err, code) {
             if (err) {
@@ -48,6 +58,4 @@ Example
             }
         });
     }
-    
-    connect();
 

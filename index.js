@@ -1,13 +1,30 @@
 var spawn = require('child_process').spawn;
+var exec = require('child_process').exec;
 var tempFile = require('temp').path;
 var writeFile = require('fs').writeFile;
 
 var vpncConfig = require('./lib/vpnc-config');
 
 exports = module.exports = {
+    available: available,
     connect: connect,
     disconnect: disconnect,
 };
+
+function available(callback) {
+    exec('vpnc --version', function (err, stdout, stderr) {
+        if (err) {
+            callback(err);
+        } else {
+            var v = (stdout + stderr).match(/(vpnc version [0-9.]+)/);
+            if (v) {
+                callback(null, v[1]);
+            } else {
+                callback(new Error('Could not parse vpnc version string'));
+            }
+        }
+    });
+}
 
 function connect(config, callback) {
     // FIXME: Load kernel module if necessary
