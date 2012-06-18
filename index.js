@@ -2,8 +2,15 @@ var spawn = require('child_process').spawn;
 var exec = require('child_process').exec;
 var tempFile = require('temp').path;
 var writeFile = require('fs').writeFile;
+var inpathSync = require('inpath').sync;
 
 var vpncConfig = require('./lib/vpnc-config');
+
+var path = process.env['PATH'].split(':');
+path.push('/usr/local/sbin');
+
+var vpncBinary = inpathSync('vpnc', path);
+var vpncDisconnectBinary = inpathSync('vpnc-disconnect', path);
 
 exports = module.exports = {
     available: available,
@@ -12,18 +19,24 @@ exports = module.exports = {
 };
 
 function available(callback) {
-    exec('vpnc --version', function (err, stdout, stderr) {
-        if (err) {
-            callback(err);
-        } else {
-            var v = (stdout + stderr).match(/(vpnc version [0-9.]+)/);
-            if (v) {
-                callback(null, v[1]);
+    if (!vpncBinary) {
+        process.nextTick(function () {
+            callback(new Error('Could not find vpnc in $PATH'));
+        });
+    } else {
+        exec(vpncBinary + ' --version', function (err, stdout, stderr) {
+            if (err) {
+                callback(err);
             } else {
-                callback(new Error('Could not parse vpnc version string'));
+                var v = (stdout + stderr).match(/(vpnc version [0-9.]+)/);
+                if (v) {
+                    callback(null, v[1]);
+                } else {
+                    callback(new Error('Could not parse vpnc version string'));
+                }
             }
-        }
-    });
+        });
+    }
 }
 
 function connect(config, callback) {
@@ -37,7 +50,7 @@ function connect(config, callback) {
         }
 
         // Launch vpnc with sudo, enabling sudo to ask for password
-        var sudo = spawn('sudo', [ 'vpnc', configFile ], { customFds: [0, 1, 2] });
+        var sudo = spawn('sudo', [ vpncBinary, configFile ], { customFds: [0, 1, 2] });
         sudo.on('exit', function (code) {
             callback(null, code);
         });
@@ -45,7 +58,7 @@ function connect(config, callback) {
 }
 
 function disconnect(callback) {
-    var sudo = spawn('sudo', [ 'vpnc-disconnect' ], { customFds: [0, 1, 2] });
+    var sudo = spawn('sudo', [ vpncDisconnectBinary ], { customFds: [0, 1, 2] });
     sudo.on('exit', function (code) {
         callback(null, code);
     });
