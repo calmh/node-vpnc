@@ -30,7 +30,7 @@ function available(callback) {
             } else {
                 var v = (stdout + stderr).match(/(vpnc version [0-9.]+)/);
                 if (v) {
-                    callback(null, v[1]);
+                    callback(null, { vpnc: vpncBinary, vpncDisconnect: vpncDisconnectBinary, version: v[1] });
                 } else {
                     callback(new Error('Could not parse vpnc version string'));
                 }
