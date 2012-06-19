@@ -1,3 +1,4 @@
+var  _ = require('underscore');
 var spawn = require('child_process').spawn;
 var exec = require('child_process').exec;
 var tempFile = require('temp').path;
@@ -39,8 +40,51 @@ function available(callback) {
     }
 }
 
-function connect(config, callback) {
-    // FIXME: Load kernel module if necessary
+function lenToMask(len) {
+    var masks = [
+        '0.0.0.0',
+        '128.0.0.0',
+        '192.0.0.0',
+        '224.0.0.0',
+        '240.0.0.0',
+        '248.0.0.0',
+        '252.0.0.0',
+        '254.0.0.0',
+        '255.0.0.0',
+        '255.128.0.0',
+        '255.192.0.0',
+        '255.224.0.0',
+        '255.240.0.0',
+        '255.248.0.0',
+        '255.252.0.0',
+        '255.254.0.0',
+        '255.255.0.0',
+        '255.255.128.0',
+        '255.255.192.0',
+        '255.255.224.0',
+        '255.255.240.0',
+        '255.255.248.0',
+        '255.255.252.0',
+        '255.255.254.0',
+        '255.255.255.0',
+        '255.255.255.128',
+        '255.255.255.192',
+        '255.255.255.224',
+        '255.255.255.240',
+        '255.255.255.248',
+        '255.255.255.252',
+        '255.255.255.255'
+    ];
+    return masks[parseInt(len, 10)];
+}
+
+function connect(config, routes, callback) {
+    if (typeof routes === 'function') {
+        callback = routes;
+        routes = {};
+    } else if (!routes) {
+        routes = {};
+    }
 
     // Create a config file for vpnc
     var configFile = tempFile({ suffix: '.vpnc.conf' });
@@ -49,8 +93,21 @@ function connect(config, callback) {
             return callback(err);
         }
 
+        // Prepare environment with routes
+        var env = process.env;
+        if (_.size(routes) > 0) {
+            env['NODE_SPLIT_INC'] = _.size(routes);
+            var i = 0;
+            _.each(routes, function (mask, net) {
+                env['NODE_SPLIT_INC_' + i + '_ADDR'] = net;
+                env['NODE_SPLIT_INC_' + i + '_MASKLEN'] = mask;
+                env['NODE_SPLIT_INC_' + i + '_MASK'] = lenToMask(mask);
+                i += 1;
+            });
+        }
+
         // Launch vpnc with sudo, enabling sudo to ask for password
-        var sudo = spawn('sudo', [ vpncBinary, configFile ], { customFds: [0, 1, 2] });
+        var sudo = spawn('sudo', [ '-E', vpncBinary, configFile ], { env: env, customFds: [0, 1, 2] });
         sudo.on('exit', function (code) {
             callback(null, code);
         });
