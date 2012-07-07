@@ -19,6 +19,11 @@ exports = module.exports = {
     disconnect: disconnect,
 };
 
+var spawnOptions = { stdio: 'inherit' };
+if (process.version.indexOf('v0.6.') === 0) {
+    spawnOptions = { customFd: [ 0, 1, 2 ] };
+}
+
 function available(callback) {
     if (!vpncBinary) {
         process.nextTick(function () {
@@ -107,7 +112,9 @@ function connect(config, routes, callback) {
         }
 
         // Launch vpnc with sudo, enabling sudo to ask for password
-        var sudo = spawn('sudo', [ '-E', vpncBinary, configFile ], { env: env, customFds: [0, 1, 2] });
+        var options = _.clone(spawnOptions);
+        options.env = env;
+        var sudo = spawn('sudo', [ '-E', vpncBinary, configFile ], options);
         sudo.on('exit', function (code) {
             callback(null, code);
         });
@@ -115,7 +122,8 @@ function connect(config, routes, callback) {
 }
 
 function disconnect(callback) {
-    var sudo = spawn('sudo', [ vpncDisconnectBinary ], { customFds: [0, 1, 2] });
+
+    var sudo = spawn('sudo', [ vpncDisconnectBinary ], spawnOptions);
     sudo.on('exit', function (code) {
         callback(null, code);
     });
