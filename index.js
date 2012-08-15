@@ -4,6 +4,7 @@ var exec = require('child_process').exec;
 var tempFile = require('temp').path;
 var writeFile = require('fs').writeFile;
 var inpathSync = require('inpath').sync;
+var sudo = require('sudo');
 
 var vpncConfig = require('./lib/vpnc-config');
 
@@ -18,11 +19,6 @@ exports = module.exports = {
     connect: connect,
     disconnect: disconnect,
 };
-
-var spawnOptions = { stdio: 'inherit' };
-if (process.version.indexOf('v0.6.') === 0) {
-    spawnOptions = { customFd: [ 0, 1, 2 ] };
-}
 
 function available(callback) {
     if (!vpncBinary) {
@@ -112,10 +108,9 @@ function connect(config, routes, callback) {
         }
 
         // Launch vpnc with sudo, enabling sudo to ask for password
-        var options = _.clone(spawnOptions);
-        options.env = env;
-        var sudo = spawn('sudo', [ '-E', vpncBinary, configFile ], options);
-        sudo.on('exit', function (code) {
+        options = { cachePassword: true, spawnOptions: { env: env } };
+        var cp = sudo([ '-E', vpncBinary, configFile ], options);
+        cp.on('exit', function (code) {
             callback(null, code);
         });
     });
@@ -123,8 +118,8 @@ function connect(config, routes, callback) {
 
 function disconnect(callback) {
 
-    var sudo = spawn('sudo', [ vpncDisconnectBinary ], spawnOptions);
-    sudo.on('exit', function (code) {
+    var cp = sudo([ vpncDisconnectBinary ], { cachePassword: true });
+    cp.on('exit', function (code) {
         callback(null, code);
     });
 }
