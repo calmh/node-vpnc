@@ -17,7 +17,7 @@
     "inpath": "~1.0.0",
     "sudo": "~1.0.1",
     "debuggable": "~1.0.0",
-    "kext": "~1.0.1"
+    "kext": "~1.1.0"
   },
   "devDependencies": {
     "should": "0.6.x",
